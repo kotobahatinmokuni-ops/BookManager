@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BookManager ローカル書籍照会API</title>
+<style>
+:root { color-scheme: light dark; --bg:#f6f7f9; --card:#fff; --text:#202124; --muted:#5f6368; --line:#d9dde2; --accent:#3b78c8; --code:#f1f3f4; }
+@media (prefers-color-scheme: dark) { :root { --bg:#1f2225; --card:#25282b; --text:#e8eaed; --muted:#b8bec5; --line:#44484d; --accent:#8ab4f8; --code:#303338; } }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP","Yu Gothic",sans-serif; line-height:1.75; }
+main { max-width:900px; margin:32px auto; padding:0 20px 60px; }
+article { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:32px 38px; box-shadow:0 2px 10px rgba(0,0,0,.04); }
+h1 { font-size:1.9rem; margin:0 0 1.2rem; line-height:1.35; }
+h2 { font-size:1.35rem; margin-top:2.3rem; padding-bottom:.35rem; border-bottom:2px solid var(--line); }
+h3 { font-size:1.05rem; margin-top:1.6rem; }
+p { margin:.7rem 0; }
+ul { margin:.5rem 0 1rem 1.4rem; }
+blockquote { margin:1rem 0; padding:.7rem 1rem; border-left:4px solid var(--accent); background:var(--code); color:var(--text); border-radius:4px; }
+pre { background:var(--code); border:1px solid var(--line); border-radius:8px; padding:14px 16px; overflow:auto; font-family:Consolas,"Cascadia Code",monospace; font-size:.92rem; line-height:1.5; }
+code { background:var(--code); border:1px solid var(--line); padding:.08em .35em; border-radius:4px; font-family:Consolas,"Cascadia Code",monospace; }
+pre code { background:none; border:none; padding:0; }
+strong { font-weight:700; }
+.note { color:var(--muted); font-size:.92rem; margin-top:2rem; }
+.tip { background:#e8f0fe; border:1px solid #d2e3fc; border-radius:8px; padding:12px 16px; margin:1rem 0; }
+.tip::before { content:"💡 "; }
+@media (prefers-color-scheme: dark) { .tip { background:#2d3b52; border-color:#4a5b74; } }
+@media print { body { background:#fff; } article { box-shadow:none; border:none; } main { max-width:none; margin:0; padding:0; } }
+</style>
+<style>
+.muted{color:var(--muted)}table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.92rem}th,td{border-bottom:1px solid var(--line);padding:9px;text-align:left;vertical-align:top}th{background:var(--code)}ol{padding-left:1.6rem}.warning{background:var(--code);border-left:4px solid #b57428;padding:12px 16px;border-radius:5px}a{color:var(--accent)} header{border-bottom:1px solid var(--line);padding-bottom:10px} @media(max-width:650px){article{padding:18px}table{display:block;overflow-x:auto}}
+</style>
+</head>
+<body><main><article>
+<header><h1>BookManager ローカルAPI</h1><p class="muted">eBookJapanとの購入済み照会・書籍登録・更新・表紙保存のためのローカル連携</p><p>（2026-10-18）</p></header>
+<div class="tip"><strong>はじめに：</strong>BookManagerの起動中に限り、ブラウザーのUserscriptがBookManagerのデータへアクセスできます。BookManagerを終了するとAPIも停止します。</div>
+<h2>1. 何ができるの？</h2>
+<p>電子書籍サイトの作品について、BookManagerに登録した他社購入情報を確認したり、書籍情報をBookManagerへ登録・更新したりできます。今回のコードには一括購入済み照会と表紙画像のアップロード処理も含まれています。</p>
+<ul><li>購入済み確認：該当電子書籍サービス以外に同タイトル・同巻の登録があるか照会</li><li>一括確認：複数タイトル・巻数をまとめて照会し、一覧表示を高速化</li><li>書籍の検索・登録・編集：タイトル、著者、出版社、ラベル、サービス、URL、状態など</li><li>表紙保存：画像をbase64で送信し、BookManagerの<code>images/</code>へ保存</li></ul>
+<h2>2. 導入・動作確認</h2>
+<ol><li>BookManagerを起動します。ローカルAPIはアプリ側のライフサイクルに従って起動・停止します。</li><li>ブラウザーにUserscript管理拡張（例：Tampermonkey、Violentmonkey）を導入し、対応する電子書籍サービス連携スクリプトを有効にします。</li><li>ブラウザーで <a href="http://127.0.0.1:8765/api/health"><code>http://127.0.0.1:8765/api/health</code></a> にアクセスして稼働確認します。</li></ol>
+<pre><code>{"ok": true, "service": "BookManager"}</code></pre>
+<p>標準の待受先は <code>127.0.0.1:8765</code> です。<strong>外部PC向けの公開サーバーではありません。</strong></p>
+<h2>3. API一覧</h2>
+<table><thead><tr><th>メソッド</th><th>パス</th><th>用途・現状</th></tr></thead><tbody>
+<tr><td>GET</td><td><code>/api/health</code></td><td>接続確認</td></tr>
+<tr><td>GET</td><td><code>/api/book-status</code></td><td>eBookJapan以外の登録サービス照会</td></tr>
+<tr><td>POST</td><td><code>/api/book-status/batch</code></td><td>複数候補を一括照会</td></tr>
+<tr><td>GET</td><td><code>/api/book</code></td><td>タイトル・サービスで検索</td></tr>
+<tr><td>GET</td><td><code>/api/book/{id}</code></td><td>書籍1件の詳細を取得</td></tr>
+<tr><td>POST</td><td><code>/api/book</code></td><td>新規書籍登録</td></tr>
+<tr><td>POST / PUT</td><td><code>/api/book/{id}</code></td><td>既存書籍を更新（更新可能項目に制約あり）</td></tr>
+<tr><td>POST</td><td><code>/api/cover/upload</code></td><td>base64表紙画像を保存し相対パスを返す</td></tr>
+<tr><td>GET / POST / DELETE</td><td><code>/api/book/{id}/image</code><br><code>/api/book/{id}/tags</code></td><td><strong>コード中に補助処理は存在しますが現行ルートは未完成です。</strong>詳細は「実装上の注意」を参照</td></tr>
+</tbody></table>
+<h2>4. 他社購入済み確認</h2>
+<h3>GET /api/book-status</h3>
+<pre><code>GET http://127.0.0.1:8765/api/book-status?title=サンプル作品amp;volume=30</code></pre>
+<pre><code>{
+  "found": true,
+  "title": "サンプル作品",
+  "volume": 30,
+  "services": ["電子書籍サービス"]
+}</code></pre>
+<ul><li><code>title</code>は必須。Unicode NFKCや空白・記号の差などを吸収した正規化比較を行います。</li><li><code>volume</code>は0以上の整数。省略した場合は巻数が設定されていない本を検索します。</li><li>eBookJapanとして登録されたサービスは照会結果から除外します。</li><li>ここでの<code>found</code>は照合条件を満たす他サービスの登録が存在することを表し、<strong>購入状態（status）までは確認していません</strong>。</li></ul>
+<h3>POST /api/book-status/batch</h3>
+<p>除外フィルター等で、複数作品をまとめて照会するためのエンドポイントです。</p>
+<pre><code>POST http://127.0.0.1:8765/api/book-status/batch
+Content-Type: application/json
+
+{
+  "items": [
+    {"volume": 30, "titles": ["サンプル作品", "サンプル作品 30"]},
+    {"volume": 5, "titles": ["サンプル作品"]}
+  ]
+}</code></pre>
+<pre><code>{
+  "results": [
+    {"found": true, "services": ["電子書籍サービス"], "matched_title": "サンプル作品"},
+    {"found": false, "services": [], "matched_title": null}
+  ]
+}</code></pre>
+<p><strong>制約：</strong>リクエスト本文は256KiB以下、<code>items</code>は最大1000件、各項目の<code>titles</code>は最大20件です。照合された<code>matched_title</code>はコード内部で正規化された文字列です。<code>volume</code>が無指定の場合、現行の一括処理では一致行を取得しません。</p>
+<h2>5. 書籍の検索・詳細取得</h2>
+<h3>GET /api/book?title=...&amp;service=...</h3>
+<pre><code>GET http://127.0.0.1:8765/api/book?title=サンプル作品&amp;service=ebookjapan</code></pre>
+<pre><code>{"matches": [{"id": 123, "title": "サンプル作品", "volume": 30, "series": "サンプル作品"}]}</code></pre>
+<p>上記の値はレスポンス形式の例です。<code>title</code>は部分一致、<code>service</code>を指定した場合はサービス名で絞り込みます。<code>GET /api/book/{id}</code>は<code>books</code>テーブル内の該当行をJSONとして返します。未登録のIDは404です。</p>
+<h2>6. 新規書籍登録</h2>
+<h3>POST /api/book</h3>
+<pre><code>POST http://127.0.0.1:8765/api/book
+Content-Type: application/json
+
+{
+  "title": "サンプル作品",
+  "volume": 1,
+  "series": "サンプル作品",
+  "author": "著者名",
+  "publisher": "出版社名",
+  "label": "レーベル名",
+  "service": "ebookjapan",
+  "url": "https://ebookjapan.yahoo.co.jp/books/…/",
+  "status": "未読",
+  "open_target": "url",
+  "cover_path": "images/ebj_example.jpg",
+  "memo": ""
+}</code></pre>
+<pre><code>HTTP 201
+{"id": 123, "message": "created"}</code></pre>
+<p>登録可能な主な項目は<code>title / volume / series / author / publisher / label / service / url / cover_path / bookCd / book_cd / open_target / status / completed / favorite / memo</code>です。<code>title</code>は必須。<code>cover_path</code>は<code>images/</code>に続く許可文字列に制限されます。<code>tags</code>や<code>imageFile</code>も入力を受け取る記述がありますが、<strong>新規登録処理ではタグ関連付けと画像URLの保存は実施していません</strong>。</p>
+<p>同一タイトル・巻数・サービスの候補が見つかった場合は新規登録せず、<code>HTTP 400</code>で<code>duplicate_found</code>、既存の<code>id</code>などを返します。内部では<code>LIKE</code>を使った検査である点に注意してください。</p>
+<h2>7. 既存書籍の更新</h2>
+<h3>POST /api/book/{id} または PUT /api/book/{id}</h3>
+<pre><code>PUT http://127.0.0.1:8765/api/book/123
+Content-Type: application/json
+
+{"title": "サンプル作品", "status": "読了", "memo": "更新例"}</code></pre>
+<pre><code>HTTP 200
+{"updated": true}</code></pre>
+<p>現行コードでは指定された一部フィールドだけを更新します。<strong><code>volume</code>は更新対象に含まれていません。</strong>また、<code>imageFile</code>等の一部入力は実際のDB列と一致しない可能性があるため、表紙変更には<code>/api/cover/upload</code>で保存した相対パスを<code>cover_path</code>として使用してください。</p>
+<p>作成・更新が正常終了した際には、BookManagerのサービスオブジェクトがある場合、画面更新イベントを発行する処理があります。</p>
+<h2>8. 表紙画像のアップロード</h2>
+<h3>POST /api/cover/upload</h3>
+<p>画像のバイナリをbase64でエンコードし、<code>image_base64</code>として送信します。<strong>画像URLを直接送信するAPIではありません。</strong></p>
+<pre><code>POST http://127.0.0.1:8765/api/cover/upload
+Content-Type: application/json
+
+{"image_base64": "（画像をbase64化した文字列）"}</code></pre>
+<pre><code>HTTP 201
+{
+  "saved": true,
+  "cover_path": "images/ebj_0123456789abcdef01234567.jpg",
+  "filename": "ebj_0123456789abcdef01234567.jpg",
+  "saved_at": "（保存先の絶対パス）"
+}</code></pre>
+<p>保存先はBookManagerプロジェクト直下の<code>images/</code>です。JPEG・PNG・GIF・WebPを画像先頭のシグネチャで判別します。本文12MiB以下・デコード画像8MiB以下の制限があります。同一内容はハッシュ名で再利用されます。返された<code>cover_path</code>を新規登録または更新APIへ渡してください。</p>
+<h2>9. 呼び出し元・ブラウザー連携</h2>
+<p>コードにはeBookJapanとDMM関連ドメインのOrigin許可設定があります。CORSは<code>GET / POST / PUT / OPTIONS</code>に対応し、事前リクエストでは<code>Content-Type</code>を許可します。許可されていないOriginからの要求には403を返します。</p>
+<p>Userscript管理拡張では、通信方式に応じて<code>@connect 127.0.0.1</code>等の許可が必要です。ブラウザーや拡張機能の設定により挙動が異なる場合があります。</p>
+<p>BookManagerを起動していない場合、Userscript側は接続失敗を処理し、通常の電子書籍サイト閲覧を妨げないようにしてください。</p>
+<h2>10. 実装上の注意（アップロード版コードで確認）</h2>
+<div class="warning"><strong>重要：</strong>ここはAPIの動作保証ではなく、アップロードされたPython実装との照合結果です。HTMLの編集だけではPython側の問題は解消しません。</div>
+<ul>
+<li><strong>表紙・タグのサブルート：</strong><code>/api/book/{id}/image</code>と<code>/api/book/{id}/tags</code>は<code>{id}</code>として<code>123/image</code>等を整数変換してしまうため、現状は正しくルーティングできません。</li>
+<li><strong>DELETE：</strong><code>do_DELETE_tags</code>の補助関数はありますが、HTTPの<code>do_DELETE</code>は定義されていないため、タグ削除APIは使用できません。</li>
+<li><strong>巻数更新：</strong><code>POST/PUT /api/book/{id}</code>の更新可能フィールドに<code>volume</code>が含まれていません。</li>
+<li><strong>重複判定：</strong>検索には<code>LIKE</code>が使われる箇所があり、厳密な完全一致ではありません。入力によって過検出する可能性があります。</li>
+<li><strong>一括照会：</strong><code>POST /api/book-status/batch</code>は正常にルーティングされますが、<code>status</code>（未購入など）に基づく所有判定は行いません。</li>
+<li><strong>更新入力：</strong><code>imageFile</code>を更新対象の列名として扱う処理があり、DBの列構成によっては更新エラーになります。</li>
+</ul>
+<h2>11. エラー形式</h2>
+<p>エラーは原則JSONで返ります。例：<code>{"error":"title_required"}</code>、<code>{"error":"invalid_json"}</code>、<code>{"error":"database_error"}</code>、<code>{"error":"origin_not_allowed"}</code>。重複時は<code>code: "duplicate_found"</code>など追加情報を返します。400、403、404、413、500などのHTTPステータスを使用します。</p>
+<p class="note">この文書はアップロード版 <code>local_api.py</code> の静的コード確認に基づく説明です。実環境のBookManagerデータベースやUserscriptとの結合テストは行っていません。</p>
+</article></main></body></html>

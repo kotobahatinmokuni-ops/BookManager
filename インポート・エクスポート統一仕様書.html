@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BookManager インポート／エクスポート統一仕様</title>
+<style>
+:root { color-scheme: light dark; --bg:#f6f7f9; --card:#fff; --text:#202124; --muted:#5f6368; --line:#d9dde2; --accent:#3b78c8; --code:#f1f3f4; }
+@media (prefers-color-scheme: dark) { :root { --bg:#1f2225; --card:#25282b; --text:#e8eaed; --muted:#b8bec5; --line:#44484d; --accent:#8ab4f8; --code:#303338; } }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP","Yu Gothic",sans-serif; line-height:1.75; }
+main { max-width:1000px; margin:32px auto; padding:0 20px 60px; }
+article { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:32px 38px; box-shadow:0 2px 10px rgba(0,0,0,.04); }
+h1 { font-size:2rem; margin:0 0 1.2rem; line-height:1.35; }
+h2 { font-size:1.45rem; margin-top:2.3rem; padding-bottom:.35rem; border-bottom:2px solid var(--line); }
+h3 { font-size:1.1rem; margin-top:1.6rem; }
+p { margin:.7rem 0; }
+ul { margin:.5rem 0 1rem 1.4rem; }
+blockquote { margin:1rem 0; padding:.7rem 1rem; border-left:4px solid var(--accent); background:var(--code); color:var(--text); border-radius:4px; }
+pre { background:var(--code); border:1px solid var(--line); border-radius:8px; padding:14px 16px; overflow:auto; font-family:Consolas,"Cascadia Code",monospace; font-size:.92rem; line-height:1.5; }
+code { background:var(--code); border:1px solid var(--line); padding:.08em .35em; border-radius:4px; font-family:Consolas,"Cascadia Code",monospace; }
+.table-wrap { overflow-x:auto; margin:1rem 0 1.2rem; }
+table { width:100%; border-collapse:collapse; min-width:620px; }
+th,td { border:1px solid var(--line); padding:9px 11px; text-align:left; vertical-align:top; }
+th { background:var(--code); font-weight:700; }
+strong { font-weight:700; }
+.note { color:var(--muted); font-size:.92rem; margin-top:2rem; }
+@media print { body { background:#fff; } article { box-shadow:none; border:none; } main { max-width:none; margin:0; padding:0; } }
+</style>
+</head>
+<body><main><article>
+<h1>BookManager インポート／エクスポート統一仕様</h1>
+<blockquote><strong>本書は、BookManagerのCSV／JSON／SQLiteによるデータ交換・バックアップの基準仕様です。</strong></blockquote>
+
+<blockquote>ヘルプでは概要だけを案内し、詳細な挙動が必要な場合は本書を参照します。</blockquote>
+<h2>1. 方式と使い分け</h2>
+<div class="table-wrap"><table><thead><tr>
+<th>方式</th>
+<th>主な用途</th>
+<th>特徴</th>
+</tr></thead><tbody>
+<tr><td><strong>CSV</strong></td><td>表計算ソフトでの編集・データ交換</td><td>人が編集しやすい</td></tr>
+<tr><td><strong>JSON</strong></td><td>BookManager間の交換・大量編集</td><td>データ構造を保持しやすい</td></tr>
+<tr><td><strong>SQLite</strong></td><td>データベース全体の移行・完全復元</td><td>DBをそのまま扱う</td></tr>
+</tbody></table></div>
+<p>CSV／JSONのインポートには、目的の異なる2種類があります（CSV・JSONどちらのファイルも両方式で扱えます）。</p>
+<div class="table-wrap"><table><thead><tr>
+<th>インポート</th>
+<th>主な目的</th>
+</tr></thead><tbody>
+<tr><td><strong>エクスプローラーモード</strong></td><td>上書き保存感覚で本を追加・更新する</td></tr>
+<tr><td><strong>自動振り分けモード</strong></td><td>フォルダへ自動で振り分けながら本を追加・更新する</td></tr>
+</tbody></table></div>
+<h1>2. CSV／JSONで扱う主な書籍情報</h1>
+<p>CSV／JSONでは、基本的に次の情報を扱います。</p>
+<pre><code>id
+title
+series
+volume
+author
+publisher
+service
+url
+file_path
+open_target
+cover_path
+favorite
+completed
+folder_completed
+folder_id
+folder_path
+status
+rating
+memo
+created_at
+updated_at
+tags</code></pre>
+<p>folder_idとfolder_pathは両方保持できますが、インポートではfolder_pathを優先します。</p>
+<p>folder_completedはその本のフォルダの完結フラグです。JSONではさらにfolders配列（path・completed）で全フォルダを保持します。</p>
+<h1>3. 本の識別</h1>
+<p>どちらのモードでも、<code>id<code>（book_id）は既存本の識別に使用しません。</p>
+<p>同一判定は基本的に、</p>
+<pre><code>title
+volume
+service</code></pre>
+<p>の組み合わせで行います（フォルダは問いません）。</p>
+<h2>3-1. タイトルの表記ゆれ</h2>
+<p>titleの同一判定では、Unicodeの互換文字を統一し、半角・全角の違いを無視します。</p>
+<p>また、半角スペース・全角スペースなどの空白文字は判定時に除去するため、空白の有無や連続数が異なるタイトルも同一とみなします。</p>
+<pre><code>架空都市、書庫スキルで成り上がる 〜弱小領地〜
+架空都市、書庫スキルで成り上がる　〜弱小領地〜
+架空都市、書庫スキルで成り上がる〜弱小領地〜
+    ↓
+同一タイトル</code></pre>
+<p>この正規化は判定時だけに適用し、登録済みのtitleやインポート値そのものは変更しません。</p>
+<p>同じ組み合わせの本がすでにある場合は、上書き確認の対象になります。</p>
+<h1>4. フォルダの決定</h1>
+<p>フォルダは、次の優先順位で決定します。</p>
+<pre><code>folder_path
+    ↓
+folder_id
+    ↓
+未分類</code></pre>
+<h2>4-1. <code>folder_path<code> が指定されている場合</h2>
+<p><code>folder_path<code> が存在すれば、そのパスに対応するフォルダを使用します。</p>
+<p>CSV／JSONに古い <code>folder_id<code> が入っていても、<strong><code>folder_path<code> を優先</strong>します。</p>
+<h3>例</h3>
+<pre><code>folder_path = 漫画/お気に入り
+folder_id   = 99</code></pre>
+<p><code>99<code> が別のフォルダを指していても、</p>
+<pre><code>漫画/お気に入り</code></pre>
+<p>を使用します。</p>
+<p>---</p>
+<h2>4-2. <code>folder_path<code> が存在しない場合</h2>
+<p>指定されたフォルダが存在しない場合は、<strong>自動作成するかどうかをユーザーに確認</strong>します。</p>
+<h3>作成する場合</h3>
+<pre><code>未登録フォルダを確認
+    ↓
+作成する
+    ↓
+必要な親フォルダも作成
+    ↓
+作成したフォルダを本に設定</code></pre>
+<h3>作成しない場合</h3>
+<pre><code>未登録フォルダを確認
+    ↓
+作成しない
+    ↓
+folder_id = None
+    ↓
+本は未分類として登録／更新</code></pre>
+<p>本はスキップしません。</p>
+<p>---</p>
+<h2>4-3. フォルダの中間階層</h2>
+<p>例えば、</p>
+<pre><code>漫画/少年漫画/新刊/2026</code></pre>
+<p>が存在しない場合でも、必要な階層をまとめて作成します。</p>
+<pre><code>漫画
+└─ 少年漫画
+   └─ 新刊
+      └─ 2026</code></pre>
+<p>---</p>
+<h2>4-4. <code>folder_path<code> が複数候補に一致する場合</h2>
+<p>曖昧な状態では自動選択しません。</p>
+<pre><code>folder_path が一意に決定できない
+        ↓
+インポート中止</code></pre>
+<p>勝手に候補のどれかを選ぶことはありません。</p>
+<p>---</p>
+<h2>4-5. <code>folder_id<code> が存在しない場合</h2>
+<p><code>folder_path<code> がなく、指定された <code>folder_id<code> がDBに存在しない場合は、</p>
+<pre><code>folder_id = None</code></pre>
+<p>として<strong>未分類</strong>として扱います。</p>
+<h2>4-6. フォルダの完結フラグ</h2>
+<p>フォルダの完結フラグも入出力します。CSVでは <code>folder_completed</code> 列、JSONでは <code>folders</code> 配列で保持します。</p>
+<p>インポート時はフォルダ確定後に反映します（未登録フォルダは作成方針に従う）。CSVに列がない旧ファイルでは何もしません。</p>
+<p>---</p>
+<h1>5. <code>volume<code> の扱い</h1>
+<p>CSVとJSONで意味を統一します。</p>
+<div class="table-wrap"><table><thead><tr>
+<th>入力</th>
+<th>BookManagerでの扱い</th>
+</tr></thead><tbody>
+<tr><td>整数として解釈できる値</td><td>数値</td></tr>
+<tr><td>空欄・未指定</td><td><code>None<code></td></tr>
+<tr><td>不正な値</td><td><code>None<code></td></tr>
+</tbody></table></div>
+<p>例えば、</p>
+<pre><code>&quot;5&quot; → 5
+空欄 → None
+&quot;abc&quot; → None</code></pre>
+<p>となります。</p>
+<p>---</p>
+<h1>6. エクスプローラーモード</h1>
+<p>エクスプローラーモードは、エクスプローラーの上書き保存と同じ挙動で<strong>本を追加・上書きするための機能</strong>です。</p>
+<p>基本的な流れは、</p>
+<pre><code>ファイル選択
+ ↓
+データ解析
+ ↓
+volume変換
+ ↓
+folder_pathを優先してフォルダ決定
+ ↓
+未登録フォルダの確認
+ ↓
+同じ階層に同タイトル・同フォルダがあれば上書き確認
+ ↓
+本を登録／上書き
+ ↓
+フォルダ完結フラグを反映
+ ↓
+タグ登録</code></pre>
+<p>です。</p>
+<h2>同一判定と上書き確認</h2>
+<h3>ファイル内</h3>
+<p>同じCSV／JSON内に同じ本が複数ある場合、重複分をスキップします。</p>
+<h3>DB内</h3>
+<p>同じ組み合わせ（title・volume・service）の本がDBに存在する場合は、上書き確認の対象になります。</p>
+<p>同じ階層に同タイトル・同フォルダがある場合、上書きするかどうかを確認します。複数ある場合はエクスプローラーと同じく「はい・すべてはい・いいえ・すべていいえ」で確認します。</p>
+<p>---</p>
+<h1>7. 自動振り分けモード</h1>
+<p>自動振り分けモードは、<strong>インポートしたファイルとDBを照合して自動で振り分け・上書きするモード</strong>です。</p>
+<p>同一判定はエクスプローラーモードと同じく title・volume・service の一致です。</p>
+<h2>同一判定の正規化</h2>
+<p>自動振り分けモードのtitle比較では、半角・全角の違いを統一し、タイトル中の空白文字をすべて除去してから比較します。</p>
+<p>そのため、次のタイトルは同じ本として扱います。</p>
+<pre><code>架空都市、書庫スキルで成り上がる 〜弱小領地を受け継いだので、優秀な人材を増やしていたら、最強領地になってた〜
+架空都市、書庫スキルで成り上がる　〜弱小領地を受け継いだので、優秀な人材を増やしていたら、最強領地になってた〜</code></pre>
+<p>このルールは、DB内の既存本との照合、同一インポートファイル内の重複排除、フォルダ自動照合に適用します。volume・service・book_cdの比較ルールは変更しません。</p>
+<h2>フォルダの自動照合</h2>
+<p>フォルダのタイトルと本が一致したとき、または同名タイトルがあるフォルダを照合します。優先順序は次の通りです。</p>
+<pre><code>1. 同名タイトルがあるフォルダ
+2. フォルダのタイトルが同じ箇所</code></pre>
+<p>複数ある場合はカウントした上でスキップします。</p>
+<h2>確認の流れ</h2>
+<pre><code>ファイル選択・事前解析
+ ↓
+自動振り分けの確認
+（該当フォルダ数・該当本数・スキップ数を一覧表示）
+ ↓
+いいえ → インポート終了
+ ↓
+未登録フォルダの確認
+ ↓
+同じ階層に同タイトル・同フォルダがあれば上書き確認
+ ↓
+本を登録／上書き
+ ↓
+フォルダ完結フラグを反映
+ ↓
+タグ登録</code></pre>
+<p>---</p>
+<h1>8. 上書き時の各項目</h1>
+<div class="table-wrap"><table><thead><tr>
+<th>項目</th>
+<th>扱い</th>
+</tr></thead><tbody>
+<tr><td><code>title<code></td><td>インポート値を使用</td></tr>
+<tr><td><code>series<code></td><td>インポート値を使用</td></tr>
+<tr><td><code>volume<code></td><td>統一ルールで変換</td></tr>
+<tr><td><code>author<code></td><td>空欄なら空にする</td></tr>
+<tr><td><code>publisher<code></td><td>空欄なら空にする</td></tr>
+<tr><td><code>service<code></td><td>空欄なら空にする</td></tr>
+<tr><td><code>url<code></td><td>空欄なら空にする</td></tr>
+<tr><td><code>file_path<code></td><td>空欄なら空にする</td></tr>
+<tr><td><code>open_target<code></td><td>空欄なら空にする</td></tr>
+<tr><td><code>cover_path<code></td><td>指定値を使用</td></tr>
+<tr><td><code>favorite<code></td><td>インポート値を使用</td></tr>
+<tr><td><code>folder_path<code></td><td>指定されていれば最優先</td></tr>
+<tr><td><code>status<code></td><td>インポート値を使用</td></tr>
+<tr><td><code>rating<code></td><td>インポート値を使用</td></tr>
+<tr><td><code>memo<code></td><td>空欄なら空にする</td></tr>
+<tr><td><code>tags<code></td><td>インポートデータの内容へ置き換える</td></tr>
+</tbody></table></div>
+<p>---</p>
+<h1>9. 上書き時の重複</h1>
+<p>上書き確認で「はい」を選んだ本は、インポート内容で置換します。</p>
+<p>同じ組み合わせの本が複数ある場合は、最初の1件を上書き対象にします。</p>
+<p>---</p>
+<h1>10. タグ</h1>
+<p>JSONでは配列として扱います。</p>
+<pre><code>&quot;tags&quot;: [
+    &quot;漫画&quot;,
+    &quot;SF&quot;,
+    &quot;お気に入り&quot;
+]</code></pre>
+<p>CSVでも同じタグ情報を扱います。</p>
+<p>上書き時は、既存タグへ単純に追加するのではなく、</p>
+<blockquote><strong>インポートデータに記載されたタグを、その本の新しいタグ構成として反映する</strong></blockquote>
+<p>方式です。</p>
+<p>---</p>
+<h1>11. 表紙画像</h1>
+<p><code>cover_path<code> で指定された画像を使用します。</p>
+<p>相対パスの場合は、</p>
+<pre><code>CSV／JSONファイルのあるディレクトリ</code></pre>
+<p>を基準に解決します。</p>
+<p>外部画像を取り込む場合は、基本的に、</p>
+<pre><code>インポート元画像
+ ↓
+BookManager/images
+ ↓
+Book.cover_path</code></pre>
+<p>の流れで扱います。</p>
+<p>表紙については、既存の内部画像を不必要に上書き・重複コピーしないことを重視します。</p>
+<p>---</p>
+<h1>12. SQLite</h1>
+<p>SQLiteはCSV／JSONとは別の用途です。</p>
+<pre><code>CSV
+→ データ交換・編集
+
+JSON
+→ 構造化データ交換・大量編集
+
+SQLite
+→ データベース全体の移行・復元</code></pre>
+<p>SQLiteでは、本を1冊ずつ変換して登録するのではなく、<strong>DB全体を扱います</strong>。</p>
+<p>そのため、書籍だけでなく、</p>
+<pre><code>books
+folders
+tags
+book_tags
+その他の管理データ</code></pre>
+<p>もまとめて保持できます。</p>
+<h2>SQLiteバックアップ</h2>
+<p>現在のDBをSQLiteファイルとして保存します。</p>
+<p>データ単位の変換は行いません。</p>
+<h2>SQLite復元</h2>
+<p>基本的に、</p>
+<pre><code>復元元SQLite
+ ↓
+整合性確認
+ ↓
+現在DBをバックアップ
+ ↓
+SQLite Backup APIで復元
+ ↓
+整合性確認</code></pre>
+<p>の順で行います。</p>
+<p>---</p>
+<h1>13. 自動バックアップ</h1>
+<p>自動バックアップでは、</p>
+<pre><code>現在のDB
+ ↓
+auto_backup_*.db</code></pre>
+<p>として保存し、設定した保存世代数を超えた古いバックアップを削除します。</p>
+<p>復元前には、</p>
+<pre><code>現在のDB
+ ↓
+books_before_restore_*.db</code></pre>
+<p>として復元前バックアップを作成します。</p>
+<p>---</p>
+<h1>14. CSV／JSONインポート共通の処理順</h1>
+<p>エクスプローラーモード、自動振り分けモードともに、基本的な確認順序を統一します。</p>
+<pre><code>ファイル選択
+ ↓
+事前解析
+ ↓
+フォルダ判定
+ ↓
+曖昧フォルダがあれば中止
+ ↓
+(自動振り分けモードのみ)自動振り分けの確認
+ ↓
+未登録フォルダの作成確認
+ ↓
+作成方針を決定
+ ↓
+同じ階層に同タイトル・同フォルダがあれば上書き確認
+ ↓
+実行
+ ↓
+完了通知</code></pre>
+<p>---</p>
+<h1>15. 仕様上の重要ルール</h1>
+<p>実装時は、次のルールを変更しません。</p>
+<h3>本</h3>
+<pre><code>同一判定: title・volume・service の一致
+一致あり → 上書き確認
+一致なし → 新規登録
+book_id は参照しない</code></pre>
+<h3>フォルダ</h3>
+<pre><code>folder_path ＞ folder_id ＞ 未分類</code></pre>
+<h3>未登録フォルダ</h3>
+<pre><code>作成する → 必要な階層を作成
+作成しない → 本は未分類</code></pre>
+<h3>曖昧なフォルダ</h3>
+<pre><code>自動選択しない
+→ インポート中止</code></pre>
+<h3>volume</h3>
+<pre><code>CSVとJSONで同じ意味・同じ変換規則</code></pre>
+<h3>通常インポート</h3>
+<pre><code>本方式では使用しない
+(エクスプローラーモードの上書き確認に統合)</code></pre>
+<h3>編集インポート</h3>
+<pre><code>本方式では使用しない
+(上書き確認に統合)</code></pre>
+<h3>タグ</h3>
+<pre><code>上書き時は
+インポートデータを新しいタグ構成として反映</code></pre>
+<p>---</p>
+<h1>16. 使い分けの簡単な目安</h1>
+<pre><code>上書き保存感覚で本を追加・更新したい
+    ↓
+インポート(エクスプローラーモード)
+
+フォルダへ自動で振り分けながら本を追加・更新したい
+    ↓
+インポート(自動振り分けモード)
+
+BookManager全体を別環境へ移したい／完全復元したい
+    ↓
+SQLite</code></pre>
+<p>---</p>
+<h2>要点</h2>
+<blockquote><strong>エクスプローラーモードは「追加＋上書き確認」</strong></blockquote>
+<p>&gt;</p>
+<blockquote><strong>自動振り分けモードは「自動振り分け＋追加＋上書き確認」</strong></blockquote>
+<p>&gt;</p>
+<blockquote><strong>SQLiteは「DB全体の移行・復元」</strong></blockquote>
+<p>&gt;</p>
+<blockquote><strong>フォルダは <code>folder_path<code> を最優先</strong></blockquote>
+<p>&gt;</p>
+<blockquote><strong>同一判定は title・volume・service、book_id は参照しない</strong></blockquote>
+<p class="note">本書はBookManagerのインポート／エクスポート動作を定義する基準仕様です。</p>
+</article></main></body></html>

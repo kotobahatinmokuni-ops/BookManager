@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BookManager 使い方</title>
+  <style>
+    body{font-family:system-ui,-apple-system,'Segoe UI','Yu Gothic',Meiryo,sans-serif;line-height:1.75;max-width:1100px;margin:0 auto;padding:28px 36px;color:#202124;background:#fff;}
+    h1{font-size:30px;margin:0 0 24px;}
+    h2{font-size:22px;margin:34px 0 12px;padding-bottom:6px;border-bottom:2px solid #d8dde3;}
+    h3{font-size:18px;margin:22px 0 8px;}
+    .toc{background:#f7f8fa;border:1px solid #dfe3e8;border-radius:8px;padding:14px 18px;margin-bottom:28px;}
+    .toc a{display:block;padding:4px 0;color:#145ea8;text-decoration:none;}
+    .toc a:hover{text-decoration:underline;}
+    .caution{color:red;font-weight:700;}
+    .spec-link{margin:14px 0 20px;padding:10px 12px;border-left:4px solid #dfe3e8;background:#f8f9fa;}
+    .spec-link a{color:#145ea8;text-decoration:none;font-weight:600;}
+    .spec-link a:hover{text-decoration:underline;}
+    pre{white-space:pre-wrap;background:#f7f8fa;border:1px solid #e0e3e7;border-radius:6px;padding:12px;overflow:auto;}
+    .bullet{margin-left:1em;}
+  </style>
+</head>
+<body>
+<h1>BookManager 使い方</h1>
+<nav class="toc"><strong>目次</strong>
+<a href="#section1">1.本の追加、編集、削除、フォルダ移動、開く</a>
+<a href="#section2">2.フォルダ機能・ブックカウント</a>
+<a href="#section3">3.検索機能、並び替え</a>
+<a href="#section4">4.表示・テーマ</a>
+<a href="#section5">5.未使用画像の削除</a>
+<a href="#section6">6.インポート、エクスポート</a>
+<a href="#section7">7.SQlite(データベース)のバックアップ、復元、管理</a>
+<a href="#section8">8.蔵書庫バックアップ</a>
+<a href="#section9">9.API設定(ブラウザとの連携)</a>
+</nav>
+<div style='height:8px'></div>
+<div style='height:8px'></div>
+<h2 id="section1">1.本の追加、編集、削除、フォルダ移動、開く</h2>
+<h3>　1-1　本の追加</h3>
+<div>　　メニューの「追加」かメイン画面の空白部分を右クリック</div>
+<div>　　フォルダを右クリック→「このフォルダへ本の追加」</div>
+<div style='height:8px'></div>
+<h3>　1-2　本の編集</h3>
+<div><strong>　　◆編集したい本を選んでメニューの「編集」か右クリック</strong></div>
+<div>　　　　※本を編集ダイアログの補足</div>
+<pre>　　　┌────────────────────────────────────┐
+　　　│　本を編集　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　│　
+　　　├────────────────────────────────────│ 
+　　　│　タイトル　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　│
+　　　│　シリーズ　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　│
+　　　│　巻数　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　│
+　　　│　作者　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　│
+　　　│　出版社　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　│
+　　　│　掲載誌/レーベル　　 　　　　　　　　　　　　　　　　　　　　　　　　　│
+　　　│　サービス　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　│
+　　　│　URL　　　※このURLが開きます　　　　　　　　　　　　　　　　　　　　　│
+　　　│　開く対象　※選んだ項目がダブルクリックで開きます　　　　　　　　　　　│
+　　　│　対象パス　※上の開く対象をファイルかフォルダにすると選択できます　　　│
+　　　│　表紙画像　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　│
+　　　│　　　　　　※参照で画像を選ぶか　　　　　　　　　　　　　　　　　　　　│
+　　　│　　　　　　タイトル+巻数で参照しなくても自動で画像が表示されます。　　 │
+　　　│　　　　　　例：タイトル「BookManager」、巻数「1」→BookManager1.jpeg　 │
+　　　│　　　　　　対応画像拡張子：jpg、jpeg、png　　　　　　　　　　　　　　　│
+　　　│　　　　　　タイトル+巻数記載例：タイトル_01、タイトル01　　　　　 　　 │
+　　　│　　　　　　類似ファイルがある場合、優先順序に基づいて表示されます　　　│
+　　　│　　　　　　<span class="caution">注意！</span>画像はBookManager内のimageフォルダに入れてください　　│
+　　　│　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　│
+　　　│　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　│
+　　　│　　　　　　　　　　　　　　　　　　　　　参照　画像を削除　　　　　　　│
+　　　│　フォルダ　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　│
+　　　│　タグ　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　│
+　　　│　　　□お気に入り　　□完結済　　　　　　　　　　　　　　　　　　　　　│
+　　　│　状態　※未購入のみ赤字になります。画像はグレー表示になります　　　　　│
+　　　│　評価　※1～5まで　　　　　　　　　　　　　　　　　　　　　　　　　　　│
+　　　│　メモ　※この中も検索の対象になります　　　　　　　　　　　　　　　　　│
+　　　│　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　│
+　　　│　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　│
+　　　│　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　│
+　　　│ 　　　　　　　　　　　　　　　　　　　　　OK　キャンセル　　　　　　 　│
+　　　└────────────────────────────────────┘</pre>
+<div style='height:8px'></div>
+<div><strong>　　　★追記:表紙画像の取得方法について</strong></div>
+<div>　　　　本のタイトルに画像ファイル名として指定できない文字列</div>
+<div>　　　　・Windows禁止文字 \ / : * ? " < > |</div>
+<div>　　　　・制御文字、末尾の空白・`.` </div>
+<div>　　　　・予約名 `CON`、`PRN`、`AUX`、`NUL`、`COM1`、`LPT1` </div>
+<div>　　　　等がある場合、アンダースコア ” _ ”に変換すれば自動取得できます。</div>
+<div>　　　　　例：タイトル「BookManager: The Best?」→「BookManager_ The Best_」</div>
+<div style='height:8px'></div>
+<div><strong>　　◆本の一括編集</strong></div>
+<div>　　　エクスプローラーと同じ様に複数のファイルを選択することができます</div>
+<div>　　　「巻数」以外は編集可能です</div>
+<div style='height:8px'></div>
+<h3>　1-3　本の削除</h3>
+<div><strong>　　◆メニューの「削除」か本を選択して右クリック</strong></div>
+<div>　　　※<span class="caution">注意！</span> 対象画像も一緒に削除されます。</div>
+<div style='height:8px'></div>
+<div><strong>　　◆本の一括削除</strong></div>
+<div>　　　エクスプローラーと同じ様に複数のファイルを選択することができます</div>
+<div>　　　※<span class="caution">注意！</span> 対象画像も一緒に削除されます。</div>
+<div style='height:8px'></div>
+<h3>　1-4　本のフォルダ移動</h3>
+<div><strong>　　◆3つの移動方法があります</strong></div>
+<div class='bullet'>　　・ドロップ＆ドラッグでフォルダに移動</div>
+<div class='bullet'>　　・本を右クリックからフォルダへ移動</div>
+<div class='bullet'>　　・編集からフォルダを選択</div>
+<div style='height:8px'></div>
+<h3>　1-5　本を開く</h3>
+<div><strong>　　◆本をダブルクリックで編集で設定した方法で開きます</strong></div>
+<div class='bullet'>　　・URL(既定)</div>
+<div class='bullet'>　　・フォルダを開く</div>
+<div class='bullet'>　　・ファイルを開く(動作はWindows依存)</div>
+<h3>　1-6　本を完結済にする</h3>
+<div><strong>　　◆追加・編集画面で完結済にチェック</strong></div>
+<div class='bullet'>　　チェックを入れることでタイトルの先頭に[完結]の文字が追加されます。</div>
+<div style='height:8px'></div>
+<div style='height:8px'></div>
+<div style='height:8px'></div>
+<h2 id="section2">2.フォルダ機能・ブックカウント</h2>
+<h3>　2-1　フォルダ機能</h3>
+<div><strong>　　◆ツリー形式でのフォルダ管理が可能</strong></div>
+<div>　　　「すべて」ですべての本が確認できます</div>
+<div>　　　「未分類」でフォルダに入っていない本が確認できます</div>
+<div style='height:8px'></div>
+<div><strong>　　◆フォルダの作成、移動、削除</strong></div>
+<div class='bullet'>　　・メニューバーの編集からかフォルダツリー画面の空白部分を右クリックでフォルダ作成</div>
+<div class='bullet'>　　・フォルダ作成後、該当フォルダを右クリック→新規サブフォルダで子フォルダを作成可能</div>
+<div class='bullet'>　　・フォルダをドロップ＆ドラッグでフォルダの移動が可能</div>
+<div class='bullet'>　　・削除したいフォルダを選んで削除。本も削除するか未分類へ移動するか選択することが可能</div>
+<div style='height:8px'></div>
+<div><strong>　　◆フォルダ名の変更</strong></div>
+<div class='bullet'>　　変更したいフォルダを選んで右クリック→フォルダ名の変更</div>
+<div style='height:8px'></div>
+<div><strong>　　◆フォルダを完結済表示にする</strong></div>
+<div class='bullet'>　　変更したいフォルダを選んで右クリック→このフォルダを完結済にする</div>
+<div>　　　　・フォルダ内の本も完結済にする</div>
+<div>　　　　・フォルダのみを完結済にする</div>
+<div>　　　　・階層すべてを完結済にする</div>
+<div>　　　の3種類あります。
+ <div>　　　完結済にしたフォルダはタイトルの先頭に[完結]の文字が入りチェックマークがアイコンに付きます</div> 
+<div style='height:8px'></div>
+<div><strong>　　◆フォルダの完結表示の解除</strong></div>
+<div class='bullet'>　　[完結]表示されたフォルダを選んで右クリック→完結済を解除する</div>
+<div>　　　　・このフォルダの完結済を解除する</div>
+<div>　　　　・フォルダ内の本も含めて解除する</div>
+<div>　　　　・階層すべての完結済を解除する</div>
+<div>　　　の3種類あります。  
+<div style='height:8px'></div>
+<h3>　2-2　ブックカウント</h3>
+<div>　　フォルダ横の数字は登録された本の冊数です。</div>
+<div>　　子フォルダがある場合は子フォルダも含めた冊数になります。</div>
+<div>　　画面左下に現在選択した本の冊数が表示されます。</div>
+<div>　　画面右下にはBookManagerに登録した本の冊数の内訳が表示されます。</div>
+<div>　　登録済:◯册（読了:◯册　未読:◯册　読書中:◯册　未購入:◯册　保留:◯册)
+<div style='height:8px'></div>
+<h3>　2-3　未分類の本を自動で振り分け機能</h3>
+<div>　　未分類の本のフォルダを右クリックすると</div>
+<div>　　未分類の本に保存されている本を自動でフォルダに振り分けることができます。</div>
+<div>　　※フォルダの自動振り分けはタイトルの一致で行います。</div>
+<div>　　　　・第1優先:フォルダ名とタイトルが同じ</div>
+<div>　　　　・第2優先:同じタイトルの本が存在するフォルダ</div>
+<div>　　　空白、半角等の揺らぎに対応。振り分け出来ない本は未分類に残ります。</div>
+<div style='height:8px'></div>
+<div style='height:8px'></div>
+<div style='height:8px'></div>
+<h2 id="section3">3.検索機能、並び替え</div>
+<div>※各種検索機能は組み合わせることが可能</div>
+<h3>　3-1　通常検索</h3>
+<div style='height:8px'></div>
+<div><strong>　　◆よくある検索機能。</strong></div>
+<div>　　　検索対象は</div>
+<div class='bullet'>　　・タイトル</div>
+<div class='bullet'>　　・シリーズ</div>
+<div class='bullet'>　　・著者</div>
+<div class='bullet'>　　・出版社</div>
+<div class='bullet'>　　・掲載誌/レーベル</div>
+<div class='bullet'>　　・サービス</div>
+<div class='bullet'>　　・メモ</div>
+<div><strong>　　◆検索履歴</strong></div>
+<div>　　　検索ワードを記入後にエンターを押すと履歴に残ります</div>
+<div><strong>　　◆検索履歴の削除</strong></div>
+<div>　　　検索履歴横のゴミ箱アイコンを押すことで履歴の削除が可能</div>
+<div style='height:8px'></div>
+<h3>　3-2　タグ検索</h3>
+<div>　　タグのみを対象した検索</div>
+<div style='height:8px'></div>
+<h3>　3-3　出版社検索</h3>
+<div>　　出版社のみを対象した検索</div>
+<div style='height:8px'></div>
+<h3>　3-4　掲載誌/レーベル検索</h3>
+<div>　　掲載誌/レーベルのみを対象した検索</div>
+<div style='height:8px'></div>
+<h3>　3-5　状態検索</h3>
+<div><strong>　　◆以下の状態の本を検索</strong></div>
+<div class='bullet'>　・読了</div>
+<div class='bullet'>　・未読</div>
+<div class='bullet'>　・読書中</div>
+<div class='bullet'>　・未購入</div>
+<div class='bullet'>　・保留</div>
+<div style='height:8px'></div>
+<h3>　3-6　サービス検索</h3>
+<div>　　電子書籍サービス・紙本・自炊本のみの検索</div>
+<div style='height:8px'></div>
+<h3>　3-7　お気に入り</h3>
+<div>　　「お気に入り」にチェック入れた本だけ検索</div>
+<div style='height:8px'></div>
+<h3>　3-8　並び替え</h3>
+<div>　　検索バーの並び替えとメイン画面の各項目をクリックすることで利用可能</div>
+<div>　　※<span class="caution">注意！</span>巻数の並び替えのみシリーズ+巻数での並び替えになります。</div>
+<div style='height:8px'></div>
+<h3>　3-9　検索結果のクリア</h3>
+<div>　　「検索結果のクリア」を押すことで検索条件をクリアできます。</div>
+<div style='height:8px'></div>
+<div style='height:8px'></div>
+<div style='height:8px'></div>
+<h2 id="section4">4.表示・テーマ</h2>
+<h3>　4-1　表示</h3>
+<div>　　メニューバーの表示から詳細表示でのメイン画面の項目の表示/非表示が選択できます。</div>
+<div style='height:8px'></div>
+<h3>　4-2　テーマ</h3>
+<div>　　メニューバーの表示のダークモードにチェックを入れることでダークテーマに変更</div>
+<div>　　ライトモードに戻したい場合はチェックを外してください。</div>
+<div style='height:8px'></div>
+<h3>　4-3　メイン画面の表示</h3>
+<div>　　詳細・小アイコン・中アイコン・大アイコン・特大アイコンから選択できます</div>
+<div style='height:8px'></div>
+<div style='height:8px'></div>
+<div style='height:8px'></div>
+<h2 id="section5">5.未使用画像の削除</h2>
+<div>　メインメニューのツールから使用していない画像の削除ができます。</div>
+<div>　BookManagerフォルダのimageフォルダが対象です。</div>
+<div style='height:8px'></div>
+<div style='height:8px'></div>
+<div style='height:8px'></div>
+<h2 id="section6">6.インポート、エクスポート</h2>
+<h3>　6-1　CSV、JSON、SQlite(データベース)、蔵書庫バックアップの違いについて</h3>
+<div><strong>　　◆BookManagerのデータ交換は、次の4方式を扱います。</strong></div>
+<div style='height:8px'></div>
+<pre>| 方式 　　　　　　  | 主な用途                   　　　　　　  | 特徴         　　　　　|</pre>
+
+<pre>| CSV   　　　　　　 | 表計算ソフト等とのデータ交換・大量編集   | 人間が編集しやすい 　  |</pre>
+<pre>| JSON   　　　　　　| BookManager間のデータ交換・大量編集 　　 | 構造を保持しやすい   　|</pre>
+<pre>| SQLite　　　　　　 | データベース全体の移行・バックアップ 　　| 本のデータベースの復元 |</pre>
+<pre>| 蔵書庫バックアップ | 蔵書庫と各種設定全体のフルバックアップ 　　| BMへの完全復帰　　　|</pre>
+<div style='height:8px'></div>
+<div style='height:8px'></div>
+<h3>　6-2　エクスポートの種類</h3>
+<div>　　エクスポートはCSV、JSONの2種類が選択できます。</div>
+<div>　　両方とも画像も含めてエクスポートされます。</div>
+<div style='height:8px'></div>
+<h3>　6-3　インポートについて</h3>
+<div>　　インポートにはインポート(エクスプローラーモード)とインポート(自動振り分けモード)があります。</div>
+<div>　　CSV・JSONどちらのファイルも両方式で扱えます。</div>
+<div style='height:8px'></div>
+<div><strong>　　◆簡単な違いは以下です。</strong></div>
+<div>　　　◯上書き保存感覚で本を追加・更新したい → インポート(エクスプローラーモード)</div>
+<div>　　　◯フォルダへ自動で振り分けながら本を追加・更新したい → インポート(自動振り分けモード)</div>
+<div>　　　◯BookManagerのデータベース全体を移行・復元したい → SQLite</div>
+<div style='height:8px'></div>
+<div>　　同一判定はタイトル・巻数・サービスの一致で行い、book_id は参照しません。</div>
+<div style='height:8px'></div>
+<div class='bullet'>　・インポート(エクスプローラーモード)</div>
+<div>　　　CSV／JSONの内容を新しい本として登録します。</div>
+<div>　　　同じ本がすでにある場合は上書き確認が出ます（複数時は「はい・すべてはい・いいえ・すべていいえ」）。</div>
+<div>　　　同一判定は基本的に タイトル・巻数・サービス を使用します。</div>
+<div>　　　volume はCSV／JSONで同じ意味になるよう変換します。</div>
+<div style='height:8px'></div>
+<div class='bullet'>　・インポート(自動振り分けモード)</div>
+<div>　　　同名タイトルの本があるフォルダ、次に同名のフォルダへ自動で振り分けます。</div>
+<div>　　　全角・半角文字、全角・半角スペースの違いがあっても同一判定できるようになっています。</div>
+<div>　　　候補が複数の場合はスキップします。振り分け内容の確認後に実行します。</div>
+<div>　　　以降の流れ（未登録フォルダ確認・上書き確認）はエクスプローラーモードと同じです。</div>
+<div style='height:8px'></div>
+<div><strong>　◆フォルダの扱い</strong></div>
+<div>　　フォルダは次の優先順位で決定します。</div>
+<div>　　folder_path ＞ folder_id ＞ 未分類</div>
+<div>　　folder_path が指定されていれば folder_id より優先します。</div>
+<div>　　指定したフォルダが存在しない場合は、作成するか選択できます。</div>
+<div>　　作成する場合は、必要な親フォルダを含めて階層を作成します。</div>
+<div>　　同じ folder_path を一意に特定できない場合は、勝手に選択せずインポートを中止します。</div>
+<div>　　folder_path がなく、folder_id も存在しない場合は未分類になります。</div>
+<div style='height:8px'></div>
+<div style='height:8px'></div>
+<div>細かい違いはかなり長くなるので別途、インポート/エクスポート仕様書をご覧ください。</div>
+<div class="spec-link"><a href="インポート・エクスポート統一仕様書.html">※インポート・エクスポート仕様書</a></div>
+<div style='height:8px'></div>
+<div><strong>　◆CSV、JSON編集方法</strong></div>
+<div>　　テスト用books.cvsをBookManager内に入れてあるのでそちらを参考にしてください。</div>
+<div>　　最低限、タイトルと巻数(1巻完結なら未記入でOK)だけ入れれば登録できます。</div>
+<div style='height:8px'></div>
+<div style='height:8px'></div>
+<div style='height:8px'></div>
+<h2 id="section7">7.SQlite(データベース)のバックアップ、復元、管理</h2>
+<div><span class="caution">注意！</span>SQliteでは画像のバックアップは出来ません。あくまで本のデータのみです。</div>
+<div style='height:8px'></div>
+<div>書籍を1冊ずつ変換するのではなく、データベース全体を移行・復元します。</div>
+<div>そのため、フォルダ、タグ、書籍データなどDBに保存されている管理情報をまとめて扱えます。</div>
+<div style='height:8px'></div>
+<h3>　7-1　SQliteの自動バックアップ設定</h3>
+<div>　　メニューバーのツール→自動バックアップ設定から細かく設定ができます。</div>
+<div>　　「自動バックアップを有効にする」にチェックを入れ保存先、バックアップ間隔を選んでください。</div>
+<div>　　保存先は終了時のバックアップと共通になります。</div>
+<div><span class="caution">　　注意！</span>初期設定では自動バックアップはOFFになっています。</div>
+<div style='height:8px'></div>
+<h3>　7-2　終了時の自動バックアップ</h3>
+<div>　　メニューバーのツール→自動バックアップ設定から細かく設定ができます。</div>
+<div>　　「終了時にもバックアップする」にチェックを入れ保存先、保存世代数を選んでください。</div>
+<div>　　保存先は自動バックアップと共通になります。</div>
+<div><span class="caution">　　注意！</span>初期設定では自動バックアップはOFFになっています。</div>
+<div style='height:8px'></div>
+<h3>　7-2　SQliteのバックアップ、復元</h3>
+<div>　　メニューバーのツール→SQlite管理から選択できます。</div>
+<div style='height:8px'></div>
+<h3>　7-3　SQliteの再読み込みと整合性のチェック</h3>
+<div>　　メニューバーのツール→SQlite管理から選択できます。</div>
+<div>　　※想定外の操作さえしなければ基本的に使うことはありません。</div>
+<div style='height:8px'></div>
+<h3>　7-4　初期化</h3>
+<div>　　メニューバーのツール→SQlite管理から選択できます。</div>
+<div>　　当たり前ですが初期化されるので取り扱いは十分気をつけてください。</div>
+<div style='height:8px'></div>
+<h2 id="section8">8.蔵書庫バックアップ</h2>
+<div style='height:8px'></div>
+<div>　　メニューバーのツール→蔵書庫バックアップから選択できます。</div>
+<div>　　蔵書庫バックアップはBookManagerの設定やデータベース、画像などをまとめてバックアップすることができます。</div>
+<div>　　各種設定、履歴、imagesフォルダの画像、「開く」で設定したローカルファイルの保存が可能ですが</div>
+<div>　　ローカルファイルが大量にある場合は容量が膨大になるのとバックアップに時間がかかる場合があります。</div>
+<div>　　復元する場合はリストラ(復元)からバックアップしたファイルを選択することで復元することができます。</div>
+<h2 id="section8">9.API設定(ブラウザとの連携)</h2>
+<div style='height:8px'></div>
+<div>　APIを使用することでBookManagerを起動している時にブラウザと連携することができます。</div>
+<div>　eBookJapan専用に未購入で他社サービスで購入した本を表示させるuserscriptが利用できます。</div>
+<div>　詳しい利用方法はヘルプ内<a href="local_api.html">ローカル書籍照会API</a>をご覧ください。</div>
+<div>　</div>
+<div><span class="caution">　注意！</span></div>
+<div>　ツール内にある「API設定」から、ブラウザとの連携を有効・無効にすることができます(デフォルトでは有効)。</div>
+<div>　IPの変更も可能ですがAPIの仕様を理解してる方向けの設定なのでいじらないでください。</div>
+
+<div style='height:8px'></div>
+<div style='height:8px'></div>
+<div style='height:8px'></div>
+<div style='height:8px'></div>
+<div style='height:8px'></div>
+<div style='height:8px'></div>
+<div style='height:8px'></div>
+<div style='height:8px'></div>
+<div style='height:8px'></div>
+<div style='height:8px'></div>
+<div style='height:8px'></div>
+<div style='height:8px'></div>
+<div style='height:8px'></div>
+</body>
+</html>
